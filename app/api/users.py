@@ -50,17 +50,16 @@ class Users(Resource):
         return {'users': data}
 
     @api.doc(parser=add_parser)
-    @api.marshal_with(user_fields)
     def post(self):
         """ Регистрирует новую учетную запись пользователя. """
 
         args = add_parser.parse_args()
 
-        if User.get_or_none(User.username == args['username']):
+        if bdUser.get_or_none(bdUser.username == args['username']):
             api.abort(409)
             # raise apiErr.NameUsedError()
 
-        if User.get_or_none(User.email == args['email']):
+        if bdUser.get_or_none(bdUser.email == args['email']):
             api.abort(409)
             # raise apiErr.EmailUsedError()
 
@@ -68,7 +67,9 @@ class Users(Resource):
         user.create_user(args)  # переписать имя метода
         user.save()
 
-        return user  # тут будет отправляться токен подтверждения
+        token = user.generate_confirmation_token()
+
+        return {'message': f'Link to confirm email: <domain>/api/confirm/{token}'}
 
 
 @api.route('/<int:id>')
@@ -106,11 +107,11 @@ class User(Resource):
         args = update_parser.parse_args()
 
         if 'username' in args and args['username'] != user.username and \
-                User.get_or_none(User.username == args['username']):
+                bdUser.get_or_none(bdUser.username == args['username']):
             api.abort(409)
             # raise apiErr.NameUsedError()
         if 'email' in args and args['email'] != user.email and \
-                User.get_or_none(User.email == args['email']):
+                bdUser.get_or_none(bdUser.email == args['email']):
             api.abort(409)
             # raise apiErr.EmailUsedError()
 
