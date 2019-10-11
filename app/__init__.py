@@ -8,7 +8,9 @@ app.config.from_object(Config)
 db = SqliteDatabase('data.db')
 
 from .api import blueprint as api
+
 app.register_blueprint(api)
-# from app import models
+
+from app import models
 
 app.run(debug=True)
