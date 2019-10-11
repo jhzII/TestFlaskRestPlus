@@ -1,12 +1,13 @@
 from flask_restplus import Namespace, Resource, reqparse, fields
 from app.models import User as bdUser
+from flask import g
 
-api = Namespace('users', description='description users namespace TEST')
+api = Namespace('users', description='description users namespace #todo')
 
 # обработка на повторение
 # написать ответ по модели
 # документация методов
-
+# настроить g
 
 user_fields = api.model('User', {
     'id': fields.Integer(readonly=True),
@@ -35,6 +36,8 @@ update_parser.add_argument('password')
 
 @api.route('/')
 class Users(Resource):
+    """ todo """
+
     @api.marshal_with(user_list_fields)  # , description='Возвращает коллекцию всех пользователей.'
     def get(self):
         """ Возвращает коллекцию всех пользователей. """
@@ -49,29 +52,42 @@ class Users(Resource):
     @api.doc(parser=add_parser)
     @api.marshal_with(user_fields)
     def post(self):
-        """ Регистрация нового пользователя. """
+        """ Регистрирует новую учетную запись пользователя. """
 
         args = add_parser.parse_args()
-        # проверки на аргументы
+
+        if User.get_or_none(User.username == args['username']):
+            api.abort(409)
+            # raise apiErr.NameUsedError()
+
+        if User.get_or_none(User.email == args['email']):
+            api.abort(409)
+            # raise apiErr.EmailUsedError()
+
         user = bdUser()
         user.create_user(args)  # переписать имя метода
         user.save()
 
-        return user
+        return user  # тут будет отправляться токен подтверждения
 
 
 @api.route('/<int:id>')
 class User(Resource):
+    """ todo """
+
     @api.marshal_with(user_fields)
     def get(self, id):
         """ Возвращает пользователя. """
+
         user = bdUser.get_or_none(bdUser.id == id)
+
         if not user:
             api.abort(404)
             # raise apiErr.NotFoundError('User not found.')
         # if g.current_user.get_id != user.get_id:
         #     api.abort(401)
             # raise apiErr.RightsError()
+
         return user
 
     @api.doc(parser=update_parser)
@@ -79,11 +95,24 @@ class User(Resource):
     def put(self, id):
         """ Изменение пользователя. """
 
-        args = update_parser.parse_args()
-
         user = bdUser.get_or_none(bdUser.id == id)
         if not user:
             api.abort(404)
+            # raise apiErr.NotFoundError('User not found.')
+        # if g.current_user.get_id != user.get_id:
+        #     api.abort(401)
+            # raise apiErr.RightsError()
+
+        args = update_parser.parse_args()
+
+        if 'username' in args and args['username'] != user.username and \
+                User.get_or_none(User.username == args['username']):
+            api.abort(409)
+            # raise apiErr.NameUsedError()
+        if 'email' in args and args['email'] != user.email and \
+                User.get_or_none(User.email == args['email']):
+            api.abort(409)
+            # raise apiErr.EmailUsedError()
 
         user.update_user(args)
         user.save()
