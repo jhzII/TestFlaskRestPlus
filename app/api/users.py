@@ -1,13 +1,9 @@
 from flask_restplus import Namespace, Resource, reqparse, fields
 from app.models import User as bdUser
+from .auth import token_auth
 from flask import g
 
 api = Namespace('users', description='description users namespace #todo')
-
-# обработка на повторение
-# написать ответ по модели
-# документация методов
-# настроить g
 
 user_fields = api.model('User', {
     'id': fields.Integer(readonly=True),
@@ -34,10 +30,11 @@ update_parser.add_argument('birthday')
 update_parser.add_argument('password')
 
 
-@api.route('/')
+@api.route('')
 class Users(Resource):
     """ todo """
 
+    @token_auth.login_required
     @api.marshal_with(user_list_fields)  # , description='Возвращает коллекцию всех пользователей.'
     def get(self):
         """ Возвращает коллекцию всех пользователей. """
@@ -76,6 +73,7 @@ class Users(Resource):
 class User(Resource):
     """ todo """
 
+    @token_auth.login_required
     @api.marshal_with(user_fields)
     def get(self, id):
         """ Возвращает пользователя. """
@@ -91,6 +89,7 @@ class User(Resource):
 
         return user
 
+    @token_auth.login_required
     @api.doc(parser=update_parser)
     @api.marshal_with(user_fields)
     def put(self, id):
@@ -100,8 +99,8 @@ class User(Resource):
         if not user:
             api.abort(404)
             # raise apiErr.NotFoundError('User not found.')
-        # if g.current_user.get_id != user.get_id:
-        #     api.abort(401)
+        if g.current_user.get_id != user.get_id:
+            api.abort(401)
             # raise apiErr.RightsError()
 
         args = update_parser.parse_args()
@@ -120,7 +119,7 @@ class User(Resource):
 
         return user
 
-
+# todo
 # записать по типу в readme
 # db.connect()
 # db.create_tables([User])

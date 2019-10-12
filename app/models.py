@@ -1,8 +1,8 @@
-# import os
-# import base64
+import os
+import base64
 import peewee as pw
 from app import app, db
-# from datetime import datetime, timedelta
+from datetime import datetime, timedelta
 from itsdangerous import URLSafeSerializer, BadSignature
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -75,6 +75,32 @@ class User(pw.Model):
         except BadSignature:
             return None
         return email
+
+    def get_token(self, expires_in=3600):
+        now = datetime.utcnow()
+        if self.token_expiration is not None:
+            time_token_expiration = datetime.strptime(self.token_expiration, '%Y-%m-%d %H:%M:%S')
+            if self.token and time_token_expiration > now + timedelta(seconds=60):
+                return self.token
+        self.token = base64.b64encode(os.urandom(24)).decode('utf-8')
+        self.token_expiration = (now + timedelta(seconds=expires_in)).strftime('%Y-%m-%d %H:%M:%S')
+        self.save()
+        return self.token
+
+    def revoke_token(self):
+        self.token_expiration = (datetime.utcnow() - timedelta(seconds=1)).strftime('%Y-%m-%d %H:%M:%S')
+        self.save()
+
+    @staticmethod
+    def check_token(token):
+        user = User.get_or_none(User.token == token)
+        if user is None:
+            return None
+        if user.token_expiration is not None:
+            time_token_expiration = datetime.strptime(user.token_expiration, '%Y-%m-%d %H:%M:%S')
+            if time_token_expiration < datetime.utcnow():
+                return None
+        return user
 
     def __repr__(self):
         return f'<User {self.username}>'

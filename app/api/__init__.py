@@ -3,6 +3,7 @@ from flask_restplus import Api
 
 from .users import api as users_api
 from .confirm import api as confirm_api
+from .token import api as token_api
 
 blueprint = Blueprint('api', __name__, url_prefix='/api')
 
@@ -12,3 +13,4 @@ api = Api(blueprint,
 
 api.add_namespace(users_api)
 api.add_namespace(confirm_api)
+api.add_namespace(token_api)
