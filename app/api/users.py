@@ -1,4 +1,5 @@
 from flask_restplus import Namespace, Resource, reqparse, fields
+from app.api.logging import logging_request
 from app.models import User as bdUser
 from .auth import token_auth
 from flask import g
@@ -51,6 +52,7 @@ class Users(Resource):
     """ todo """
 
     @token_auth.login_required
+    @logging_request(logging=True)
     @api.marshal_with(user_list_fields)  # , description='Возвращает коллекцию всех пользователей.'
     def get(self):
         """ Возвращает коллекцию всех пользователей. """
@@ -61,6 +63,7 @@ class Users(Resource):
 
         return {'users': data}
 
+    @logging_request(logging=True)
     @api.doc(parser=add_parser)
     def post(self):
         """ Регистрирует новую учетную запись пользователя. """
@@ -86,6 +89,7 @@ class User(Resource):
     """ todo """
 
     @token_auth.login_required
+    @logging_request(logging=True)
     @api.marshal_with(user_fields)
     def get(self, id):
         """ Возвращает пользователя. """
@@ -100,6 +104,7 @@ class User(Resource):
         return user
 
     @token_auth.login_required
+    @logging_request(logging=True)
     @api.doc(parser=update_parser)
     @api.marshal_with(user_fields)
     def put(self, id):

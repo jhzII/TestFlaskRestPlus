@@ -7,6 +7,7 @@ app.config.from_object(Config)
 
 db = SqliteDatabase('data.db')
 
+from .api import logging  # уточнить способ
 from .api import blueprint as api
 
 app.register_blueprint(api)
