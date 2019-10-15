@@ -87,7 +87,7 @@ class InvalidLincError(ApiError):
 class InvalidTokenError(ApiError):
     """ Исключение. Недействительный токен. """
 
-    http_code = 400
+    http_code = 401
     api_code = 1002
     message = 'Invalid token.'
 
@@ -120,7 +120,7 @@ class WrongDataError(ApiError):
 class RightsError(ApiError):
     """ Исключение. Недостаточно прав. """
 
-    http_code = 400
+    http_code = 403
     api_code = 1005
     message = 'Insufficient rights.'
 

@@ -47,7 +47,7 @@ update_parser.add_argument('birthday')
 update_parser.add_argument('password')
 
 
-@api.route('')
+@api.route('/')
 class Users(Resource):
     """ todo """
 

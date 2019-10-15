@@ -28,10 +28,10 @@ class User(pw.Model):
 
     def update_user(self, data):
         for field in ['username', 'email', 'birthday']:
-            if field in data:
+            if field in data and data[field]:
                 setattr(self, field, data[field])
 
-        if 'password' in data:
+        if 'password' in data and data['password']:
             self.password_hash = generate_password_hash(data['password'])
 
     def get_user(self):
