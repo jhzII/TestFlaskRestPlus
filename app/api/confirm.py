@@ -1,5 +1,6 @@
 from flask_restplus import Namespace, Resource
 from app.models import User
+import app.api.errors as err
 
 api = Namespace('confirm', description='description confirm namespace #todo')
 
@@ -12,17 +13,14 @@ class Confirm(Resource):
         email = User.get_email_by_token(token)
 
         if not email:
-            api.abort(400)
-            # raise apiErr.InvalidLincError()
+            raise err.InvalidLincError()
 
         user = User.get_or_none(User.email == email)
 
         if not user:
-            api.abort(400)
-            # raise apiErr.InvalidLincError()
+            raise err.InvalidLincError()
         if user.confirmed:
-            api.abort(400)
-            # raise apiErr.AlreadyConfirmedError()
+            raise err.AlreadyConfirmedError()
 
         user.confirmed = True
         user.save()

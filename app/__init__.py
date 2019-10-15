@@ -11,6 +11,6 @@ from .api import blueprint as api
 
 app.register_blueprint(api)
 
-from app import models
+from app import models, errors
 
 app.run(debug=True)

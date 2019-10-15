@@ -2,8 +2,24 @@ from flask_restplus import Namespace, Resource, reqparse, fields
 from app.models import User as bdUser
 from .auth import token_auth
 from flask import g
+import app.api.errors as err
+
 
 api = Namespace('users', description='description users namespace #todo')
+
+
+@api.errorhandler(Exception)  # BadRequest
+def api_error(error):
+
+    # if hasattr(error, 'data') and 'errors' in error.data and (
+    #     'username' in error.data['errors'] or
+    #     'email' in error.data['errors'] or
+    #     'password' in error.data['errors']
+    # ):
+    #     error.data = err.InsufficientDataError('Must include username, email and password fields.')
+
+    error.data = err.InsufficientDataError('Must include username, email and password fields.')
+
 
 user_fields = api.model('User', {
     'id': fields.Integer(readonly=True),
@@ -18,10 +34,10 @@ user_list_fields = api.model('Users', {
 })
 
 add_parser = reqparse.RequestParser()
-add_parser.add_argument('username', required=True, help='Not username.')  # , description='Имя пользователя.'
-add_parser.add_argument('email', required=True, help='Not email.')  # , description='Email.')
-add_parser.add_argument('birthday')  # , description='Дата рождения.')  # дата вроде строкой передается (уточнить)
-add_parser.add_argument('password', required=True, help='Not password.')  # , description='Пароль.')
+add_parser.add_argument('username', required=True, help='Username cannot be blank!')
+add_parser.add_argument('email', required=True, help='Email cannot be blank!')
+add_parser.add_argument('birthday')
+add_parser.add_argument('password', required=True, help='Password cannot be blank!')
 
 update_parser = reqparse.RequestParser()
 update_parser.add_argument('username')
@@ -41,24 +57,20 @@ class Users(Resource):
 
         data = bdUser.select()
         if not data:  # в теории невозможно
-            api.abort(404)
-            # raise apiErr.NotFoundError('Users not found.')
+            raise err.NotFoundError('Users not found.')
 
         return {'users': data}
 
     @api.doc(parser=add_parser)
     def post(self):
         """ Регистрирует новую учетную запись пользователя. """
-
         args = add_parser.parse_args()
 
         if bdUser.get_or_none(bdUser.username == args['username']):
-            api.abort(409)
-            # raise apiErr.NameUsedError()
+            raise err.NameUsedError()
 
         if bdUser.get_or_none(bdUser.email == args['email']):
-            api.abort(409)
-            # raise apiErr.EmailUsedError()
+            raise err.EmailUsedError()
 
         user = bdUser()
         user.create_user(args)  # переписать имя метода
@@ -81,11 +93,9 @@ class User(Resource):
         user = bdUser.get_or_none(bdUser.id == id)
 
         if not user:
-            api.abort(404)
-            # raise apiErr.NotFoundError('User not found.')
-        # if g.current_user.get_id != user.get_id:
-        #     api.abort(401)
-            # raise apiErr.RightsError()
+            raise err.NotFoundError('User not found.')
+        if g.current_user.get_id != user.get_id:
+            raise err.RightsError()
 
         return user
 
@@ -97,22 +107,18 @@ class User(Resource):
 
         user = bdUser.get_or_none(bdUser.id == id)
         if not user:
-            api.abort(404)
-            # raise apiErr.NotFoundError('User not found.')
+            raise err.NotFoundError('User not found.')
         if g.current_user.get_id != user.get_id:
-            api.abort(401)
-            # raise apiErr.RightsError()
+            raise err.RightsError()
 
         args = update_parser.parse_args()
 
         if 'username' in args and args['username'] != user.username and \
                 bdUser.get_or_none(bdUser.username == args['username']):
-            api.abort(409)
-            # raise apiErr.NameUsedError()
+            raise err.NameUsedError()
         if 'email' in args and args['email'] != user.email and \
                 bdUser.get_or_none(bdUser.email == args['email']):
-            api.abort(409)
-            # raise apiErr.EmailUsedError()
+            raise err.EmailUsedError()
 
         user.update_user(args)
         user.save()
