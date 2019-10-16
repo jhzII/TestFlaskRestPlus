@@ -1,15 +1,17 @@
-from flask_restplus import Namespace, Resource, reqparse, fields
-from app.api.logging import logging_request
-from app.models import User as bdUser
-from .auth import token_auth
 from flask import g
-import app.api.errors as err
+from flask_restplus import Namespace, Resource, reqparse
+from app.models import User as bdUser
+from werkzeug.exceptions import BadRequest
+from . import errors as err
+from .logging import logging_request
+from .auth import token_auth
+from .models import user_fields, user_list_fields, token_field, error_fields
 
 
-api = Namespace('users', description='description users namespace #todo')
+api = Namespace('users', description='database management')
 
 
-@api.errorhandler(Exception)  # BadRequest
+@api.errorhandler(BadRequest)  # BadRequest # Exception
 def api_error(error):
 
     # if hasattr(error, 'data') and 'errors' in error.data and (
@@ -21,18 +23,6 @@ def api_error(error):
 
     error.data = err.InsufficientDataError('Must include username, email and password fields.')
 
-
-user_fields = api.model('User', {
-    'id': fields.Integer(readonly=True),
-    'username': fields.String,
-    'email': fields.String,
-    'birthday': fields.String,
-    'confirmed': fields.String(readonly=True)
-})
-
-user_list_fields = api.model('Users', {
-    'users': fields.List(fields.Nested(user_fields, skip_none=True))
-})
 
 add_parser = reqparse.RequestParser()
 add_parser.add_argument('username', required=True, help='Username cannot be blank!')
@@ -53,7 +43,10 @@ class Users(Resource):
 
     @token_auth.login_required
     @logging_request(logging=True)
-    @api.marshal_with(user_list_fields)  # , description='Возвращает коллекцию всех пользователей.'
+    @api.response(401, 'Unauthorized ', error_fields)
+    @api.response(404, 'Not Found', error_fields)
+    @api.marshal_with(user_list_fields, description='OK')
+    @api.doc(security='BearerAuth')
     def get(self):
         """ Возвращает коллекцию всех пользователей. """
 
@@ -64,9 +57,13 @@ class Users(Resource):
         return {'users': data}
 
     @logging_request(logging=True)
+    @api.response(201, 'Created', token_field)
+    @api.response(400, 'Bad Request', error_fields)
+    @api.response(409, 'Conflict', error_fields)
     @api.doc(parser=add_parser)
     def post(self):
         """ Регистрирует новую учетную запись пользователя. """
+
         args = add_parser.parse_args()
 
         if bdUser.get_or_none(bdUser.username == args['username']):
@@ -81,16 +78,20 @@ class Users(Resource):
 
         token = user.generate_confirmation_token()
 
-        return {'message': f'Link to confirm email: <domain>/api/confirm/{token}'}
+        return {'message': f'Link to confirm email: <domain>/api/confirm/{token}'}, 201
 
 
 @api.route('/<int:id>')
+@api.response(401, 'Unauthorized ', error_fields)
+@api.response(403, 'Forbidden', error_fields)
+@api.response(404, 'Not Found', error_fields)
+@api.doc(security='BearerAuth', params={'id': 'An ID'})
 class User(Resource):
     """ todo """
 
     @token_auth.login_required
     @logging_request(logging=True)
-    @api.marshal_with(user_fields)
+    @api.marshal_with(user_fields, description='OK')
     def get(self, id):
         """ Возвращает пользователя. """
 
@@ -105,8 +106,9 @@ class User(Resource):
 
     @token_auth.login_required
     @logging_request(logging=True)
+    @api.response(409, 'Conflict', error_fields)
+    @api.marshal_with(user_fields, description='OK')
     @api.doc(parser=update_parser)
-    @api.marshal_with(user_fields)
     def put(self, id):
         """ Изменение пользователя. """
 

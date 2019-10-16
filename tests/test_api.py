@@ -48,7 +48,7 @@ class ApiServiceTestCase(unittest.TestCase):
             'birthday': '20.09.2000'
         })
 
-        self.assertEqual(resp.status_code, 200, f'status_code == {resp.status_code}')
+        self.assertEqual(resp.status_code, 201, f'status_code == {resp.status_code}')
         self.assertTrue(User.get_or_none(User.username == 'test_add'), 'User not added.')
         self.assertTrue(User.get_or_none(User.email == 'test_add@gg.com'), 'User not added.')
 
